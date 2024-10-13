@@ -34,6 +34,7 @@ except Exception as e:
 TOKEN = config['discord_token']
 admins = config['admins']
 channelid = config['channel_id']
+vclink = config['vc_link']
 
 
 #patchcount = "1.3"
@@ -225,6 +226,12 @@ async def ready(ctx):
         gif = discord.File(gif_path)
         await ctx.send(random_phrase, file=gif)
         
+@bot.command() # set the vc link in the config.json file
+async def noti(ctx, member: discord.Member):
+    user_mentioned = member.id
+    usermessage = f"get up and lock in {member.name}"
+    link = vclink
+    await user_mentioned.send(content=usermessage, link=link)
 
 
 bot.run(TOKEN)
