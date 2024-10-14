@@ -11,7 +11,7 @@ from time import sleep
 # Set up the bot with a command prefix
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='.', intents=intents)
 update_info = {"isUpdate": False, "version": "", "message": ""}
 
 # get the directory of the current script
@@ -227,11 +227,20 @@ async def ready(ctx):
         await ctx.send(random_phrase, file=gif)
         
 @bot.command() # set the vc link in the config.json file
-async def noti(ctx, member: discord.Member):
-    user_mentioned = member.id
+async def notify(ctx, member: discord.Member, *, message=None):
     usermessage = f"get up and lock in {member.name}"
-    link = vclink
-    await user_mentioned.send(content=usermessage, link=link)
+    if message:
+        usermessage += f": {message}"
+    link = vclink 
+    try:
+        await member.send(f"{usermessage}\n{link}") # sends the message to the member
+        await ctx.send(f"successfully sent a noti and a link to {member.name}")
+    except discord.errors.Forbidden: # dms disabled
+        await ctx.send(f"couldn't send a message to {member.name}, they might have dms disabled")
+    except Exception as e:
+        print(f"an error occurred: {str(e)}")
+        await ctx.send(f"an error occurred while trying to send a message to {member.name}")
+
 
 
 bot.run(TOKEN)
