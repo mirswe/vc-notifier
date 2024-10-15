@@ -33,8 +33,10 @@ except Exception as e:
 
 TOKEN = config['discord_token']
 admins = config['admins']
-channelid = config['channel_id']
+channelid = config['lockin_channel_id']
 vclink = config['vc_link']
+sleepchid = config['sleep_channel_id']
+lockchid = config['lockin_channel_id']
 
 
 #patchcount = "1.3"
@@ -241,6 +243,42 @@ async def notify(ctx, member: discord.Member, *, message=None):
         print(f"an error occurred: {str(e)}")
         await ctx.send(f"an error occurred while trying to send a message to {member.name}")
 
+@bot.command()
+async def sleep(ctx): #cmd to move to sleep channel
+    sleepChannel = bot.get_channel(sleepchid) # gets the sleep channel
+    try:
+        await ctx.author.move_to(sleepChannel) # moves the user to the sleep channel
+        await ctx.author.edit(deafen=True, mute=True) # deafens and mutes the user
+        await ctx.send(f"you're now asleep, do '.lockin' when you're ready to lock back in")
+    # error handling
+    except discord.errors.Forbidden:
+        await ctx.send("i dont have permission to move your voice state")
+    except discord.errors.HTTPException as e:
+        await ctx.send(f"an error occurred while trying to move you: {str(e)}")
+    except Exception as e:
+        await ctx.send(f"an error occurred: {str(e)}")
 
+@bot.command()
+async def lockin(ctx): #cmd to lockin back into vc (only works in sleep channel)
+    lockinChannel = bot.get_channel(lockchid)
+    if not lockinChannel: # checks to see if the lockin channel is config
+        await ctx.send("the lockin channel is not found, see dwight")
+        return
+    try:
+        # checks to see if user is in vc
+        if not ctx.author.voice: # checks to see if the user is in a vc
+            await ctx.send("you're not in a voice channel")
+            return
+        # moves the user to the lockin channel and unmutes and undeafens them
+        await ctx.author.move_to(lockinChannel)
+        await ctx.author.edit(deafen=False, mute=False)
+        await ctx.send(f"you're now locked back in, {ctx.author.name}")
+    # error handling
+    except discord.errors.Forbidden:
+        await ctx.send("i dont have permission to move your voice state")
+    except discord.errors.HTTPException as e:
+        await ctx.send(f"an error occurred while trying to move you: {str(e)}")
+    except Exception as e:
+        await ctx.send(f"an error occurred: {str(e)}")
 
 bot.run(TOKEN)
