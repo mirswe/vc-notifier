@@ -42,7 +42,7 @@ lockchid = config['lockin_channel_id']
 #patchcount = "1.3"
 admin_voice_states = {}
 
-
+# some bot logic
 async def set_bot_status(status_message):
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name=status_message))
 
@@ -62,6 +62,8 @@ async def update_status():
     else:
         await set_bot_status("locked in")
 
+
+# events
 @bot.event
 async def on_connect():
     global patchcount, updates, update_info
@@ -178,6 +180,11 @@ async def on_voice_state_update(member, before, after):
         except Exception as e:
             print(f"there was an error in on_voice_state_update: {e}")
 
+
+
+
+
+# commands
 @bot.command()
 async def yo(ctx):
     await ctx.send(f'{ctx.author.name} stop being a doof and @ing me')
@@ -247,6 +254,9 @@ async def notify(ctx, member: discord.Member, *, message=None):
 async def sleep(ctx): #cmd to move to sleep channel
     sleepChannel = bot.get_channel(sleepchid) # gets the sleep channel
     try:
+        if not ctx.author.voice: # checks to see if the user is in a vc
+            await ctx.send("you're not in a voice channel")
+            return
         await ctx.author.move_to(sleepChannel) # moves the user to the sleep channel
         await ctx.author.edit(deafen=True, mute=True) # deafens and mutes the user
         await ctx.send(f"you're now asleep, do '.lockin' when you're ready to lock back in")
@@ -280,5 +290,16 @@ async def lockin(ctx): #cmd to lockin back into vc (only works in sleep channel)
         await ctx.send(f"an error occurred while trying to move you: {str(e)}")
     except Exception as e:
         await ctx.send(f"an error occurred: {str(e)}")
+
+@bot.command()
+async def status(ctx):
+    try:
+        with open('patchdata.json', 'r') as f:
+            data = json.load(f)
+            patchcount = data['patchcount']
+    except FileNotFoundError:
+        patchcount = "null"
+    msg = f"im currently up and online! using v{patchcount}"
+    await ctx.send(msg)
 
 bot.run(TOKEN)
