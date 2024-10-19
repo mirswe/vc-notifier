@@ -106,10 +106,10 @@ async def on_connect():
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
     channel = bot.get_channel(channelid)
-    if channel is None:
-        print(f"warning: channel {channelid} not found!")
-    else:
-        print(f"successfully found channel {channel.name}")
+    # if channel is None:
+    #     print(f"warning: channel {channelid} not found!")
+    # else:
+    #     print(f"successfully found channel {channel.name}")
 
     # send update message if it's a new patch
     if update_info["isUpdate"]:
@@ -251,7 +251,7 @@ async def notify(ctx, member: discord.Member, *, message=None):
         await ctx.send(f"an error occurred while trying to send a message to {member.name}")
 
 @bot.command()
-async def sleep(ctx): #cmd to move to sleep channel
+async def sleep(ctx): # cmd to move to sleep channel
     sleepChannel = bot.get_channel(sleepchid) # gets the sleep channel
     try:
         if not ctx.author.voice: # checks to see if the user is in a vc
