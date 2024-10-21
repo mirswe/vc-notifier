@@ -31,6 +31,8 @@ except Exception as e:
     print(f"error reading config file: {e}")
     # handle other potential errors
 
+
+# need to update the channel ids every 2 days
 TOKEN = config['discord_token']
 admins = config['admins']
 channelid = config['lockin_channel_id']
@@ -115,7 +117,7 @@ async def on_ready():
     if update_info["isUpdate"]:
         # logic for sending update message to the channel
         try:
-            await channel.send(f"update patch: v{update_info['version']}, '{update_info['message']}'")
+            await channel.send(f"update patch: v{update_info['version']}: \n {update_info['message']} \n ||@here||")
             await channel.send(f"dwight currently online!")
         except Exception as e:
             print(f"error sending update messages: {e}")
