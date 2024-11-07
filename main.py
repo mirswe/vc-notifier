@@ -35,7 +35,7 @@ except Exception as e:
 # need to update the channel ids every 2 days
 TOKEN = config['discord_token']
 admins = config['admins']
-channelid = config['lockin_channel_id']
+channelid = config['update_channel_id']
 vclink = config['vc_link']
 sleepchid = config['sleep_channel_id']
 lockchid = config['lockin_channel_id']
@@ -117,8 +117,9 @@ async def on_ready():
     if update_info["isUpdate"]:
         # logic for sending update message to the channel
         try:
-            await channel.send(f"update patch: v{update_info['version']}: \n {update_info['message']} \n ||@here||")
+            await channel.send(f"update patch v{update_info['version']}: \n {update_info['message']} \n ||@here||")
             await channel.send(f"dwight currently online!")
+            print(f"successfully sent channel its update and online state")
         except Exception as e:
             print(f"error sending update messages: {e}")
 
@@ -175,8 +176,10 @@ async def on_voice_state_update(member, before, after):
                             with open(gif_path, 'rb') as f:
                                 gif = discord.File(f, filename = os.path.basename(gif_path))
                                 await admin.send(content=message, file=gif)
+                                print(f"the vc msg sender has been used with a gif\n")
                         else:
                             await admin.send(content=message)
+                            print(f"the vs msg sender has been used without a gif, gif path cannot be found\n")
                     except Exception as e:
                         print(f"error sending message to {admin_id}: {e}")
         except Exception as e:
@@ -190,6 +193,7 @@ async def on_voice_state_update(member, before, after):
 @bot.command()
 async def yo(ctx):
     await ctx.send(f'{ctx.author.name} stop being a doof and @ing me')
+    print(f"{ctx.author.name} has used the yo cmd\n")
 
 @bot.command()
 async def v(ctx):
@@ -198,8 +202,9 @@ async def v(ctx):
             data = json.load(f)
             patchcount = data['patchcount']
     except FileNotFoundError:
-        patchcount = 1.3
+        patchcount = "null"
     await ctx.send(f'current patch: v{patchcount}')
+    print(f"{ctx.author.name} has used the v cmd\n")
 
 @bot.command()
 async def prevupdates(ctx):
@@ -212,12 +217,14 @@ async def prevupdates(ctx):
         patchcount = 1.3
         updates = []
     if not updates:
-        await ctx.send(f'current patch: v{patchcount}, and the previous updates were {patchcount-1}./n And the previous messages were')
+        await ctx.send(f'current patch: null\n I was unable to fetch any of the previous updates')
+        print(f"{ctx.author.name} has used the prevupdates cmd, and it wasnt able to retrieve any updates\n")
     else:
         message = f"current patch: v{patchcount}\n\nprevious updates:"
         for update in reversed(updates[-5:]):  # show last 5 updates in reverse order
             message += f"\nv{update['version']}: {update['message']}"
         await ctx.send(message)
+        print(f"{ctx.author.name} has used the prevupdates cmd\n")
 
 
 @bot.command()
@@ -261,7 +268,8 @@ async def sleep(ctx): # cmd to move to sleep channel
             return
         await ctx.author.move_to(sleepChannel) # moves the user to the sleep channel
         await ctx.author.edit(deafen=True, mute=True) # deafens and mutes the user
-        await ctx.send(f"you're now asleep, do '.lockin' when you're ready to lock back in")
+        await ctx.send(f"you're now asleep, do .lockin when you're ready to lock back in")
+        print(f"{ctx.author.name} has used the sleep cmd\n")
     # error handling
     except discord.errors.Forbidden:
         await ctx.send("i dont have permission to move your voice state")
@@ -285,6 +293,7 @@ async def lockin(ctx): #cmd to lockin back into vc (only works in sleep channel)
         await ctx.author.move_to(lockinChannel)
         await ctx.author.edit(deafen=False, mute=False)
         await ctx.send(f"you're now locked back in, {ctx.author.name}")
+        print(f"{ctx.author.name} has used the lockin cmd\n")
     # error handling
     except discord.errors.Forbidden:
         await ctx.send("i dont have permission to move your voice state")
@@ -303,5 +312,6 @@ async def status(ctx):
         patchcount = "null"
     msg = f"im currently up and online! using v{patchcount}"
     await ctx.send(msg)
+    print(f"{ctx.author.name} has used the status cmd\n")
 
 bot.run(TOKEN)
