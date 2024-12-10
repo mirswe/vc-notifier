@@ -4,7 +4,9 @@ import os
 import json
 import random
 from time import sleep
+import tracemalloc
 
+tracemalloc.start()
 
 
 # next update: doesn't send message to the admin already in voice channel
@@ -39,6 +41,9 @@ channelid = config['update_channel_id']
 vclink = config['vc_link']
 sleepchid = config['sleep_channel_id']
 lockchid = config['lockin_channel_id']
+afkchid = config['afk_channel_id']
+statuschid = config['status_channel_id']
+statusmsgid = config['status_message_id']
 
 
 #patchcount = "1.3"
@@ -46,7 +51,7 @@ admin_voice_states = {}
 
 # some bot logic
 async def set_bot_status(status_message):
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.custom, name=status_message))
+    await bot.change_presence(activity=discord.CustomActivity(name=status_message))
 
 
 async def update_status():
@@ -69,6 +74,24 @@ async def update_status():
 @bot.event
 async def on_connect():
     global patchcount, updates, update_info
+    # channel = bot.get_channel(statuschid)
+    # try:
+    #     await channel.send("im online")
+    #     print(f"successfully sent channel that im online")
+    # except Exception as e:
+    #     print(f"There was an error sending the status channel the message: {e}" )
+
+    # create logic where it fetches the message and edits it to im online if it says "im offline"
+    message_id = statusmsgid
+    channel = await bot.fetch_channel(statuschid)
+    message = await channel.fetch_message(message_id)
+    if message.content == 'im offline':
+        await message.edit(content="im online")
+        await bot.close()
+        print("dwight has shutdown")
+    else:
+        print("either cant find message or message doesnt match msg content")
+
     try:
         with open('patchdata.json', 'r') as f:
             data = json.load(f)
@@ -96,6 +119,7 @@ async def on_connect():
         update_info["version"] = patchcount
         update_info["message"] = updatemsg
     elif isUpdate == "n":
+        # await sleep(4)
         sleep(4)
         print("Regular restart, no update patch")
         return
@@ -103,6 +127,18 @@ async def on_connect():
         print("Invalid input, please enter 'y' or 'n'")
         return
 
+# continue working on this another time
+@bot.event
+async def on_disconnect():
+    message_id = statusmsgid
+    channel = await bot.fetch_channel(statuschid)
+    message = await channel.fetch_message(message_id)
+    if message.content == 'im online':
+        await message.edit(content="im offline")
+        await bot.close()
+        print("dwight has shutdown")
+    else:
+        print("either cant find message or message doesnt match msg content")
 
 @bot.event
 async def on_ready():
@@ -117,7 +153,7 @@ async def on_ready():
     if update_info["isUpdate"]:
         # logic for sending update message to the channel
         try:
-            await channel.send(f"update patch v{update_info['version']}: \n {update_info['message']} \n ||@here||")
+            await channel.send(f"update patch v{update_info['version']}:\n {update_info['message']} \n ||@here||")
             await channel.send(f"dwight currently online!")
             print(f"successfully sent channel its update and online state")
         except Exception as e:
@@ -143,7 +179,6 @@ async def on_voice_state_update(member, before, after):
             message = None  # Initialize message to None at the start
             if before.channel is None and after.channel is not None: # checks to see is voice channel state is channed aka someone joined
                 # making message a variable, setting it as a message preloaded
-                
                 status_message = f"{member} is currently locked in"
                 await set_bot_status(status_message)
                 gif = None
@@ -157,6 +192,7 @@ async def on_voice_state_update(member, before, after):
                     print(f"error loading gif: {e}")
                 
                 
+
                 message = f"it's time to lock in, {member} just joined the vc."  # set the message
             
             elif before.channel is not None and after.channel is None: # checks to see if voice channel state is changed aka someone left
@@ -167,19 +203,25 @@ async def on_voice_state_update(member, before, after):
 
             # if there's a message aka someone joining
             if message:
+                guild = member.guild
+
                 # check to see what user is in vc, and do not send to that user
                 for admin_id in admin_not_in_vc: # use for loop to iterate through every admin not in vc and send it to them
                     try:
+                        admin_member = guild.get_member(admin_id)
                         admin = await bot.fetch_user(admin_id)
-                        if gif_path:
 
-                            with open(gif_path, 'rb') as f:
-                                gif = discord.File(f, filename = os.path.basename(gif_path))
-                                await admin.send(content=message, file=gif)
-                                print(f"the vc msg sender has been used with a gif\n")
-                        else:
-                            await admin.send(content=message)
-                            print(f"the vs msg sender has been used without a gif, gif path cannot be found\n")
+                        # only send message if admin is not in any voice channel
+                        if not admin_member.voice:
+                            if gif_path:
+
+                                with open(gif_path, 'rb') as f:
+                                    gif = discord.File(f, filename = os.path.basename(gif_path))
+                                    await admin.send(content=message, file=gif)
+                                    print(f"the vc msg sender has been used with a gif\n")
+                            else:
+                                await admin.send(content=message)
+                                print(f"the vs msg sender has been used without a gif, gif path cannot be found\n")
                     except Exception as e:
                         print(f"error sending message to {admin_id}: {e}")
         except Exception as e:
@@ -271,6 +313,25 @@ async def sleep(ctx): # cmd to move to sleep channel
         await ctx.send(f"you're now asleep, do .lockin when you're ready to lock back in")
         print(f"{ctx.author.name} has used the sleep cmd\n")
     # error handling
+    except discord.errors.Forbidden:
+        await ctx.send("i dont have permission to move your voice state")
+    except discord.errors.HTTPException as e:
+        await ctx.send(f"an error occurred while trying to move you: {str(e)}")
+    except Exception as e:
+        await ctx.send(f"an error occurred: {str(e)}")
+
+@bot.command()
+async def afk(ctx):
+    afkChannel = bot.get_channel(afkchid)
+    try:
+        if not ctx.author.voice:
+            await ctx.send("you're not in a voice channel")
+            return
+        await ctx.author.move_to(afkChannel)
+        await ctx.author.edit(deafen=True, mute=True)
+        await ctx.send("you're now afk, do .lockin when you're ready to lock back in")
+        print(f"{ctx.author.name} has used the sleep cmd")
+    
     except discord.errors.Forbidden:
         await ctx.send("i dont have permission to move your voice state")
     except discord.errors.HTTPException as e:
