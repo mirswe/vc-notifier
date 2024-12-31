@@ -36,7 +36,12 @@ except Exception as e:
 
 # need to update the channel ids every 2 days
 TOKEN = config['discord_token']
-admins = config['admins']
+GUILD_ID = config['server_id']
+ADMIN_ROLE_NAMES = [".", "soulja"]
+#admins = config['admins']
+# instead of keeping a fixed list of admin ids, lets check the . role for admins and list each id out in order
+user_ids = []
+admins = []
 channelid = config['update_channel_id']
 vclink = config['vc_link']
 sleepchid = config['sleep_channel_id']
@@ -142,8 +147,37 @@ async def on_disconnect():
 
 @bot.event
 async def on_ready():
+    global user_ids, admins
+    channel = bot.get_channel(channelid) # getting channel id obviously
+    # logic for getting the admin ids on startup
+    guild = bot.get_guild(GUILD_ID) # server id
+    if not guild:
+        print("server not found")
+        await bot.close()
+        return
+    
+
+    people_w_role = [] # creating a people w role list to populate later
+    for role_name in ADMIN_ROLE_NAMES: # if theres people with that role then itll populate the list with it
+        role = discord.utils.get(guild.roles, name=role_name)
+        if role:
+            people_w_role.extend(role.members)
+    if not people_w_role: # if list is empty after the check then print
+        print(f"no one has the specified roles")
+    else: # else run this to remove dupes and populate to the user_ids and admins list
+        # removing dupes by turning into a set then turning it back
+        pwl_set = set(people_w_role)
+        people_w_role = list(pwl_set)
+
+        # prining all of the people with the specified roles
+        print(f"todays admins that have the specified roles: ")
+        user_ids = [member.id for member in people_w_role] # extracts the user ids from the people with roles list
+        admins.clear()
+        admins.extend(user_ids)
+        for member in people_w_role:
+            print(f' - {member} (ID: {member.id})')
+    
     print(f'{bot.user} has connected to Discord!')
-    channel = bot.get_channel(channelid)
     # if channel is None:
     #     print(f"warning: channel {channelid} not found!")
     # else:
@@ -162,6 +196,8 @@ async def on_ready():
 @bot.event
 async def on_voice_state_update(member, before, after):
     #checks to see if admin joined vc
+    if not admins:
+        print("the admins list is empty")
     if member.id in admins:
         if after.channel:
             admin_voice_states[member.name] = after.channel.name
