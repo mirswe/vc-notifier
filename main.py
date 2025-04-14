@@ -13,6 +13,7 @@ tracemalloc.start()
 # Set up the bot with a command prefix
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 bot = commands.Bot(command_prefix='.', intents=intents)
 update_info = {"isUpdate": False, "version": "", "message": ""}
 
@@ -37,6 +38,7 @@ except Exception as e:
 # need to update the channel ids every 2 days
 TOKEN = config['discord_token']
 GUILD_ID = config['server_id']
+# NOTI_ROLE_NAME = "noti"
 ADMIN_ROLE_NAMES = [".", "soulja"]
 #admins = config['admins']
 # instead of keeping a fixed list of admin ids, lets check the . role for admins and list each id out in order
@@ -156,6 +158,11 @@ async def on_ready():
         await bot.close()
         return
     
+    # print("Available roles in guild:")
+    # for role in guild.roles:
+    #     print(f"- {role.name}")
+
+    await guild.chunk()    
 
     people_w_role = [] # creating a people w role list to populate later
     for role_name in ADMIN_ROLE_NAMES: # if theres people with that role then itll populate the list with it
@@ -254,7 +261,7 @@ async def on_voice_state_update(member, before, after):
                                 with open(gif_path, 'rb') as f:
                                     gif = discord.File(f, filename = os.path.basename(gif_path))
                                     await admin.send(content=message, file=gif)
-                                    print(f"the vc msg sender has been used with a gif\n")
+                                    print(f"the vc msg sender has been used with a gif")
                             else:
                                 await admin.send(content=message)
                                 print(f"the vs msg sender has been used without a gif, gif path cannot be found\n")
