@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 import json
 import random
+import asyncio
 from time import sleep
 import tracemalloc
 
@@ -127,7 +128,7 @@ async def on_connect():
         update_info["message"] = updatemsg
     elif isUpdate == "n":
         # await sleep(4)
-        sleep(4)
+        await asyncio.sleep(4)
         print("Regular restart, no update patch")
         return
     else:
@@ -135,17 +136,17 @@ async def on_connect():
         return
 
 # continue working on this another time
-@bot.event
-async def on_disconnect():
-    message_id = statusmsgid
-    channel = await bot.fetch_channel(statuschid)
-    message = await channel.fetch_message(message_id)
-    if message.content == 'im online':
-        await message.edit(content="im offline")
-        await bot.close()
-        print("dwight has shutdown")
-    else:
-        print("either cant find message or message doesnt match msg content")
+# @bot.event
+# async def on_disconnect():
+#     message_id = statusmsgid
+#     channel = await bot.fetch_channel(statuschid)
+#     message = await channel.fetch_message(message_id)
+#     if message.content == 'im online':
+#         await message.edit(content="im offline")
+#         await bot.close()
+#         print("dwight has shutdown")
+#     else:
+#         print("either cant find message or message doesnt match msg content")
 
 @bot.event
 async def on_ready():
@@ -182,6 +183,7 @@ async def on_ready():
         admins.clear()
         admins.extend(user_ids)
         for member in people_w_role:
+            await asyncio.sleep(1)
             print(f' - {member} (ID: {member.id})')
     
     print(f'{bot.user} has connected to Discord!')
